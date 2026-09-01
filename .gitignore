@@ -1,0 +1,20 @@
+# --- Données sensibles / runtime : ne jamais committer ---
+# Secrets éventuels (jetons, clés, mots de passe).
+*.token
+*.key
+*.pem
+id_rsa
+id_ed25519
+.ssh/
+*.env
+.env
+
+# Fichiers d'état / runtime Omarchy-Hyprland
+mirror-intent
+lid-closed
+*.bak.*
+*.bak
+
+# Stickers de montage/état (intermédiaires)
+Thumbs.db
+.DS_Store

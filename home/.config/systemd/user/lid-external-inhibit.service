@@ -1,0 +1,17 @@
+[Unit]
+Description=Inhibit lid-close suspend while an external monitor is connected
+# Needs the Hyprland socket and the Omarchy hardware helpers. Start with the
+# graphical session, after the environment Omarchy relies on is imported.
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionEnvironment=OMARCHY_PATH
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStart=%h/.config/omarchy/lid-external-inhibit.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

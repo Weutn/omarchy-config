@@ -1,0 +1,182 @@
+#!/bin/bash
+
+# User wrapper around Omarchy's omarchy-hyprland-monitor-scaling.
+#
+# Why we replace the packaged script entirely:
+#
+#  1. transform loss. The packaged script rebuilds the focused monitor's mode
+#     (mode = "<w>x<h>@<rate>") without passing the current transform, so on a
+#     portrait/rotated panel (the GPD's internal DSI-1, transform = 3) any
+#     scale change silently resets the rotation to 0.
+#
+#  2. scale normalization. Rebuilding the mode under rotation also makes
+#     Hyprland round the reported scale up (e.g. request 1.6 -> reported 2),
+#     so the requested size is never applied exactly.
+#
+# Instead we apply scale + transform together in a single eval WITHOUT
+# rebuilding the mode (leaving mode = "preferred"). Hyprland then honours the
+# requested scale exactly on rotated panels: 1, 1.25, 1.6, 2, ... all stick,
+# and the rotation is preserved in the same call.
+
+SCALES=(1 1.25 1.6 2 3 4)
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy"
+SCALE_LOG="$STATE_DIR/monitor-scaling.log"
+
+usage() {
+  echo "Usage: omarchy-hyprland-monitor-scaling [up|down|SCALE]"
+}
+
+cmdline_for_pid() {
+  local pid="$1"
+  [[ -r /proc/$pid/cmdline ]] || return 0
+  tr '\0\t\n' '   ' <"/proc/$pid/cmdline" | sed -E 's/[[:space:]]+/ /g; s/[[:space:]]+$//'
+}
+
+audit_scale_change() {
+  local requested="$1" active_monitor="$2" current_scale="$3" new_scale="$4"
+  local parent_cmd="" grandparent_cmd=""
+  local ppid="$PPID" gppid
+  gppid=$(ps -o ppid= -p "$ppid" 2>/dev/null | tr -d ' ')
+  parent_cmd=$(cmdline_for_pid "$ppid")
+  grandparent_cmd=$(cmdline_for_pid "$gppid")
+  mkdir -p "$STATE_DIR" || return 0
+  printf 'at=%s\trequested=%s\tcurrent=%s\tnew=%s\tmonitor=%s\tpid=%s\tppid=%s\tparent=%s\tgppid=%s\tgrandparent=%s\n' \
+    "$(date --iso-8601=seconds)" "$requested" "$current_scale" "$new_scale" \
+    "$active_monitor" "$$" "$ppid" "$parent_cmd" "$gppid" "$grandparent_cmd" >>"$SCALE_LOG"
+}
+
+# Hyprland only accepts scales where the mode divides into whole logical
+# pixels (in 1/120 steps). Round the requested scale up to the nearest clean
+# value for the monitor's physical dimensions.
+clean_scale() {
+  awk -v scale="$1" -v width="$2" -v height="$3" '
+    function gcd(a, b, t) { while (b) { t = a % b; a = b; b = t } return a }
+    BEGIN {
+      g = gcd(width * 120, height * 120)
+      k = int(scale * 120 + 0.5)
+      if (k > g) k = g
+      while (g % k != 0) k++
+      printf "%g\n", k / 120
+    }'
+}
+
+normalize_scale() {
+  awk 'NR == 1 { printf "%g\n", $0 }'
+}
+
+set_scale() {
+  local requested_scale="$1"
+  local requested="${2:-$requested_scale}"
+  local monitor_info transform current_scale
+  local active_monitor width height
+
+  monitor_info="$(hyprctl monitors -j | jq -e -c '.[] | select(.focused == true)')" || return 1
+  active_monitor="$(echo "$monitor_info" | jq -r '.name')"
+  current_scale="$(echo "$monitor_info" | jq -r '.scale')"
+  width="$(echo "$monitor_info" | jq -r '.width')"
+  height="$(echo "$monitor_info" | jq -r '.height')"
+  transform="$(echo "$monitor_info" | jq -r '.transform // 0')"
+
+  # active_monitor is written into the Lua string eval'd below, so only a
+  # plain connector name may pass.
+  if [[ ! $active_monitor =~ ^[A-Za-z0-9._-]+$ ]]; then
+    echo "Refusing unsafe monitor name" >&2
+    return 1
+  fi
+
+  local new_scale="$(clean_scale "$requested_scale" "$width" "$height")"
+  local new_gdk_scale="$(awk -v scale="$new_scale" 'BEGIN { printf "%d", int(scale + 0.5) }')"
+
+  # Apply scale + preserve the live rotation in a single eval, WITHOUT
+  # rebuilding the mode (avoids Hyprland's scale normalization on rotated DSIs).
+  local transform_arg=""
+  if [[ -n "$transform" && "$transform" != "0" && "$transform" != "null" ]]; then
+    transform_arg=", transform = $transform"
+  fi
+  hyprctl eval "hl.monitor({ output = \"$active_monitor\", scale = $new_scale${transform_arg} })" >/dev/null
+
+  audit_scale_change "$requested" "$active_monitor" "$current_scale" "$new_scale"
+
+  # Persist so the change survives reboots:
+  #   - rewrite the monitor's own `scale` inside monitors.lua (keeping its
+  #     `transform`), because Hyprland resets a scale-less monitor to 2 on reload
+  #   - keep Omarchy's catch-all vars in sync as well
+  local monitor_lua="$HOME/.config/hypr/monitors.lua"
+  if [[ -f $monitor_lua ]]; then
+    if grep -Eq 'output\s*=\s*"'$active_monitor'"' "$monitor_lua"; then
+      sed -i -E "s|(output\s*=\s*\"$active_monitor\"[^)]*scale\s*=\s*)[0-9.]+|\1$new_scale|" "$monitor_lua"
+    fi
+    if grep -q '^local omarchy_monitor_scale = ' "$monitor_lua"; then
+      sed -i -E \
+        -e "s|^local omarchy_monitor_scale = .*|local omarchy_monitor_scale = ${new_scale}|" \
+        -e "s|^local omarchy_gdk_scale = .*|local omarchy_gdk_scale = ${new_gdk_scale}|" \
+        "$monitor_lua"
+    fi
+  fi
+}
+
+scale_from_current() {
+  local direction="${1:-}" width="${2:-}" height="${3:-}"
+  awk -v direction="$direction" -v list="${SCALES[*]}" -v width="$width" -v height="$height" '
+    function gcd(a, b, t) { while (b) { t = a % b; a = b; b = t } return a }
+    function clean(scale,    g, k) {
+      g = gcd(width * 120, height * 120)
+      k = int(scale * 120 + 0.5)
+      if (k > g) k = g
+      while (g % k != 0) k++
+      return k / 120
+    }
+    NR == 1 { scale = $0; found = 1 }
+    END {
+      if (!found) exit 1
+      preset_count = split(list, presets, " ")
+      for (i = 1; i <= preset_count; i++) {
+        effective = clean(presets[i])
+        key = sprintf("%.8f", effective)
+        distance = presets[i] - effective
+        if (distance < 0) distance = -distance
+        if (!(key in effective_index)) {
+          effective_index[key] = ++n
+          effective_scales[n] = effective
+          scales[n] = presets[i]
+          distances[n] = distance
+        } else {
+          idx = effective_index[key]
+          if (distance < distances[idx]) { scales[idx] = presets[i]; distances[idx] = distance }
+        }
+      }
+      best = 1; best_diff = 1e9
+      for (i = 1; i <= n; i++) {
+        diff = scale - effective_scales[i]; if (diff < 0) diff = -diff
+        if (diff < best_diff) { best_diff = diff; best = i }
+      }
+      if (direction == "next") print scales[(best < n ? best + 1 : n)]
+      else if (direction == "previous") print scales[(best > 1 ? best - 1 : 1)]
+      else print scales[best]
+    }'
+}
+
+case "${1:-}" in
+"")
+  hyprctl monitors -j | jq -er '.[] | select(.focused == true) | .scale' | normalize_scale
+  ;;
+-h | --help)
+  usage
+  ;;
+up | down)
+  monitor_info=$(hyprctl monitors -j | jq -e -c '.[] | select(.focused == true)')
+  dir="next"; [[ "$1" == "down" ]] && dir="previous"
+  next="$(echo "$monitor_info" | jq -r '.scale' | scale_from_current "$dir" \
+    "$(echo "$monitor_info" | jq -r '.width')" "$(echo "$monitor_info" | jq -r '.height')")"
+  set_scale "$next" "$1"
+  ;;
+*)
+  if [[ $1 =~ ^[0-9]+([.][0-9]+)?$ ]] &&
+    awk -v scale="$1" 'BEGIN { exit !(scale >= 1 && scale <= 4) }'; then
+    set_scale "$1"
+  else
+    usage >&2
+    exit 1
+  fi
+  ;;
+esac

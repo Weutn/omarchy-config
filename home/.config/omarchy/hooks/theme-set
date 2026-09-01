@@ -1,0 +1,3 @@
+#!/bin/bash
+# Omarchy theme-set hook
+/home/weutn/.local/bin/omarchy-yazi-generator
