@@ -1,8 +1,9 @@
 # ÉTAPES : donner à opencode l'accès GitHub (via SSH)
 
 But : permettre à **opencode (agent Weutn sur le GPD MicroPC)** de pousser
-le dépôt `gpd-omarchy-config` vers GitHub **sans demander de mot de passe à chaque fois**
-(stratégie SSH, pas HTTPS/token). Coût à faire : **une seule fois**, côté GitHub (web).
+le dépôt `omarchy-config` (dossier `GPD-microPC/`) vers GitHub **sans demander de mot de passe
+à chaque fois** (stratégie SSH, pas HTTPS/token). Coût à faire : **une seule fois**, côté
+GitHub (web).
 
 ---
 
@@ -46,7 +47,7 @@ ssh-add -l
 
 Depuis `~/Documents/gpd-omarchy-config` :
 ```bash
-git remote add origin git@github.com:weutn/gpd-omarchy-config.git
+git remote add origin git@github.com:Weutn/omarchy-config.git
 git branch -M main
 git push -u origin main
 ```
