@@ -1,4 +1,4 @@
-# Procédure de sauvegarde — gpd-omarchy-config
+# Procédure de sauvegarde — GPD-microPC (omarchy-config)
 
 Ce document est la **référence** pour opencode (et pour toi) chaque fois qu'une
 modification de configuration est faite sur le GPD : elle doit être *commitée* et
@@ -18,7 +18,7 @@ C'est ce que ce dépôt mire (sous `home/`).
 ## Procédure (à chaque modification utile)
 
 ```bash
-cd ~/Documents/gpd-omarchy-config
+cd ~/Documents/gpd-omarchy-config/GPD-microPC
 
 # 1. Re-synchroniser les fichiers réels vers le dépôt-miroir (rsync, exclusions .sample/.bak/fichiers-runtime)
 rsync -a --exclude='*.sample' --exclude='*.bak*' --exclude='mirror-intent' \
