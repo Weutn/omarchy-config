@@ -1,0 +1,32 @@
+# Quebec Abstrait — bleu nuit profond + crème doux, tirés du fond d'écran.
+mode = "dark"
+
+accent = "#5896cc"
+selection = "#2f4a73"
+muted = "#76859c"
+
+background = "#14233a"
+dark_background = "#0f1b2e"
+darker_background = "#0b1526"
+lighter_background = "#1d3050"
+
+foreground = "#d6d2c3"
+dark_foreground = "#8a97ad"
+light_foreground = "#e4e0d2"
+bright_foreground = "#e4e0d2"
+
+red = "#d97f84"
+yellow = "#dec27c"
+orange = "#d9966a"
+green = "#8fc0a0"
+cyan = "#74bec7"
+blue = "#74a8d4"
+magenta = "#b4a0dc"
+brown = "#9a836e"
+
+bright_red = "#ec9a9f"
+bright_yellow = "#edd9a2"
+bright_green = "#abd5bf"
+bright_cyan = "#97d1da"
+bright_blue = "#99c0e2"
+bright_magenta = "#d2c2ee"

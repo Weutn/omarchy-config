@@ -30,5 +30,18 @@
 
 // Médias stockés sur la forge (Vault/Medias) — browsing + lecture mpv via SSH.
 // Sous « apps » pour apparaître avec les autres applications (id racine "apps").
-"apps.medias": {"icon":"","label":"Vault Media","description":"Films, séries et musique de la forge (Vault/Medias)","action":"omarchy-launch-or-focus-tui forge-media"}
+"apps.medias": {"icon":"","label":"Vault Media","description":"Films, séries et musique de la forge (Vault/Medias)","action":"omarchy-launch-or-focus-tui forge-media"},
+
+// Jeux : launcher GOG (Heroic), Steam et raccourci direct Civ IV BTS.
+"games": {"icon":"","label":"Games","description":"Steam, GOG (Heroic) et jeux installés"},
+"games.heroic": {"icon":"󰀄","label":"GOG / Heroic","description":"Client GOG (gogdl, jeux natifs Linux + Wine)","action":"uwsm-app -- heroic"},
+"games.steam": {"icon":"","label":"Steam","description":"Client Steam","action":"uwsm-app -- steam"},
+"games.civ4": {"icon":"","label":"Civ IV: Beyond the Sword","description":"Lancer directement Civ IV BTS (Steam)","action":"uwsm-app -- steam \"steam://rungameid/8800\""},
+"games.openrct2": {"icon":"󰢫","label":"OpenRCT2","description":"RollerCoaster Tycoon 2 (moteur natif, données Steam RCT2 TT)","action":"uwsm-app -- openrct2"},
+"games.vcmi": {"icon":"󰢫","label":"VCMI — Heroes of Might and Magic III","description":"HoMM3 natif (données GOG)","action":"uwsm-app -- /home/weutn/Applications/VCMI.AppImage"},
+"games.homm3": {"icon":"󰢫","label":"HoMM3 Complete (Wine)","description":"Shadow of Death + Armageddon's Blade, via Wine","action":"uwsm-app -- gtk-launch homm3"},
+"games.homm3_hota": {"icon":"󰢫","label":"HoMM3: Horn of the Abyss (Wine)","description":"HotA 1.8.1 + HD mod, via Wine","action":"uwsm-app -- gtk-launch homm3_hota"},
+"games.fallout1": {"icon":"󰢫","label":"Fallout 1 (Wine)","description":"Fallout 1997 (GOG)","action":"uwsm-app -- gtk-launch fallout1"},
+"games.fallout2": {"icon":"󰢫","label":"Fallout 2 (Wine)","description":"Fallout 2 1998 (GOG)","action":"uwsm-app -- gtk-launch fallout2"},
+"games.rct_deluxe": {"icon":"󰢫","label":"RCT Deluxe (Wine)","description":"RollerCoaster Tycoon 1 (GOG)","action":"uwsm-app -- gtk-launch rct_deluxe"}
 }

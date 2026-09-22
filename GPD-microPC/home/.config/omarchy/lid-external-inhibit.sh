@@ -173,6 +173,24 @@ recover_mirror() {
   fi
 }
 
+# ---- mirror margin cleanup (Hyprland #11708) ----------------------------------
+# Mirroring panels of different geometry (portrait DSI-1 -> landscape TV)
+# leaves stale buffer data in the letterbox margins (black squares / trails).
+# A delayed reload after the mirror is live clears it (community workaround from
+# hyprwm/Hyprland#11708, verified on this GPD). A reload that fires while the
+# mirror is still coming up is ineffective, hence the small delay.
+
+schedule_mirror_cleanup() {
+  if [[ ! -f $MIRROR_FLAG ]]; then
+    return
+  fi
+  log "scheduling delayed reload to clear mirror margins"
+  (
+    sleep 4
+    hyprctl reload >/dev/null 2>&1 || true
+  ) &
+}
+
 # ---- main loop ----------------------------------------------------------------
 
 apply_inhibit
@@ -200,6 +218,7 @@ while read -r event; do
       recover_modeless
       recover_mirror
       apply_idle_by_external
+      schedule_mirror_cleanup
       ;;
     configreloaded*)
       recover_modeless
