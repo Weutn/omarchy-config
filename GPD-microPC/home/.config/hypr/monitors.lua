@@ -2,7 +2,7 @@
 -- List current monitors and supported resolutions with: hyprctl monitors all
 
 local omarchy_gdk_scale = 1
-local omarchy_monitor_scale = 1.25
+local omarchy_monitor_scale = 1
 
 hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = omarchy_monitor_scale })
@@ -22,4 +22,4 @@ hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@60", position = "auto", scal
 -- The scaling wrapper in ~/.local/bin/omarchy-hyprland-monitor-scaling rewrites
 -- this line's `scale` (keeping `transform = 3`) on every scale change, so
 -- changes survive reboots.
-hl.monitor({ output = "DSI-1", mode = "preferred", position = "0x0", scale = 1.25, transform = 3 })
+hl.monitor({ output = "DSI-1", mode = "preferred", position = "0x0", scale = 1, transform = 3 })

@@ -16,6 +16,17 @@ hl.config({
   },
 })
 
+-- When the GPD's rotated DSI panel (transform=3) is mirrored to an external
+-- screen, the hardware cursor plane is mis-sampled on the mirrored output and
+-- leaves black boxes/trails at the left/right edges of the secondary display.
+-- Same workaround Omarchy ships for nouveau (no_hardware_cursors).
+-- https://wiki.hypr.land/Configuring/Basics/Variables/#cursor
+hl.config({
+  cursor = {
+    no_hardware_cursors = 1,
+  },
+})
+
 -- https://wiki.hypr.land/Configuring/Basics/Variables/#decoration
 -- hl.config({
 --   decoration = {
